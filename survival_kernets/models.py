@@ -149,7 +149,7 @@ def nll_kernel_hazard(phi: Tensor, idx_durations: Tensor, events: Tensor,
 
     batch_size = phi.size(0)
     num_durations = idx_durations.max().item() + 1
-    if alpha > 0:
+    if alpha < 1:
         rank_mat_np = pair_rank_mat(idx_durations.detach().cpu().numpy(),
                                     events.detach().cpu().numpy())
         # rank_normalization_constant = rank_mat_np.sum()
@@ -190,7 +190,7 @@ def nll_kernel_hazard(phi: Tensor, idx_durations: Tensor, events: Tensor,
     else:
         uniformity_loss = 0.
 
-    if alpha > 0:
+    if alpha < 1:
         surv = (1 - hazards).add(1e-12).log().cumsum(1).exp()
         ones = torch.ones((batch_size, 1), device=phi.device)
         A = surv.matmul(y_bce.transpose(0, 1))
@@ -867,7 +867,7 @@ class NKSSummaryLoss(nn.Module):
 
         batch_size = hazards.size(0)
         num_durations = hazards.size(1)
-        if alpha > 0:
+        if alpha < 1:
             rank_mat_np = pair_rank_mat(idx_durations.detach().cpu().numpy(),
                                         events.detach().cpu().numpy())
             # rank_normalization_constant = rank_mat_np.sum()
@@ -881,7 +881,7 @@ class NKSSummaryLoss(nn.Module):
         bce = F.binary_cross_entropy(hazards, y_bce, reduction='none')
         nll_loss = bce.cumsum(1).gather(1, idx_durations).view(-1)
 
-        if alpha > 0:
+        if alpha < 1:
             surv = (1 - hazards).add(1e-12).log().cumsum(1).exp()
             ones = torch.ones((batch_size, 1), device=hazards.device)
             A = surv.matmul(y_bce.transpose(0, 1))
